@@ -127,3 +127,18 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Output artifacts
+seg_net.pth
+reg_net.pth
+seg_net_pretrained.pth
+data_synthetic/
+deepatlas-venv/
+folds_histogram.png
+reg_net_best.pth
+reg_net_losses.png
+seg_net_best.pth
+seg_net_pretrained_losses.png
+seg_net_training_losses.png
+seg_net_validation_losses.png
+
