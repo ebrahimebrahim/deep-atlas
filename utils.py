@@ -76,9 +76,15 @@ def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
     and plot an x-y grid warped by this deformation.
     
     vector_field should be a tensor of shape (2,L,W)
+        Note: vector_field spatial indices are swapped to match the conventions of imshow and quiver
     kwargs are passed to matplotlib plotting
     """
-    phi = lambda pt : pt + vector_field[:,pt[0],pt[1]].numpy() # deformation mapping
+    # phi in the following line is the deformation mapping.
+    # Note that we are swapping the spatial x and y when we evaluate vector_field;
+    # the reason for this is that we want to match the the "matrix" or "image" style
+    # conventions used by matplotlib imshow and quiver, where the axis used for "rows"
+    # precedes the axis used for "columns"
+    phi = lambda pt : pt + vector_field[:,pt[1],pt[0]].numpy() # deformation mapping
 
     _,xmax,ymax = vector_field.shape
     xvals = np.arange(0,xmax,grid_spacing)
@@ -86,11 +92,11 @@ def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
     for x in xvals:
         pts = [phi(np.array([x,y])) for y in yvals]
         pts = np.array(pts)
-        plt.plot(pts[:,1],pts[:,0], **kwargs)
+        plt.plot(pts[:,0],pts[:,1], **kwargs)
     for y in yvals:
         pts = [phi(np.array([x,y])) for x in xvals]
         pts = np.array(pts)
-        plt.plot(pts[:,1],pts[:,0], **kwargs)
+        plt.plot(pts[:,0],pts[:,1], **kwargs)
 
 def preview_3D_deformation(vector_field, grid_spacing, **kwargs):
     """
