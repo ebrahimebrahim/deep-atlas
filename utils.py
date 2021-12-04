@@ -43,7 +43,7 @@ def plot_2D_vector_field(vector_field, downsampling):
     """vector_field should be a tensor of shape (2,L,W)"""
     downsample2D = monai.networks.layers.factories.Pool['AVG',2](kernel_size=downsampling)
     vf_downsampled = downsample2D(vector_field.unsqueeze(0))[0]
-    plt.quiver(vf_downsampled[0,:,:], vf_downsampled[1,:,:], angles='xy', scale_units='xy', scale=1);
+    plt.quiver(vf_downsampled[0,:,:], vf_downsampled[1,:,:], angles='xy', scale_units='xy', scale=downsampling);
     
 
 def preview_3D_vector_field(vector_field, downsampling=None):
@@ -68,6 +68,49 @@ def preview_3D_vector_field(vector_field, downsampling=None):
     plot_2D_vector_field(vector_field[[0,2],:,y,:], downsampling)
     plt.subplot(1,3,3); plt.axis('off')
     plot_2D_vector_field(vector_field[[0,1],:,:,z], downsampling)
+    plt.show()
+
+def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
+    """
+    Interpret vector_field as a displacement vector field defining a deformation,
+    and plot an x-y grid warped by this deformation.
+    
+    vector_field should be a tensor of shape (2,L,W)
+    kwargs are passed to matplotlib plotting
+    """
+    phi = lambda pt : pt + vector_field[:,pt[0],pt[1]].numpy() # deformation mapping
+
+    _,xmax,ymax = vector_field.shape
+    xvals = np.arange(0,xmax,grid_spacing)
+    yvals = np.arange(0,ymax,grid_spacing)
+    for x in xvals:
+        pts = [phi(np.array([x,y])) for y in yvals]
+        pts = np.array(pts)
+        plt.plot(pts[:,1],pts[:,0], **kwargs)
+    for y in yvals:
+        pts = [phi(np.array([x,y])) for x in xvals]
+        pts = np.array(pts)
+        plt.plot(pts[:,1],pts[:,0], **kwargs)
+
+def preview_3D_deformation(vector_field, grid_spacing, **kwargs):
+    """
+    Interpret vector_field as a displacement vector field defining a deformation,
+    and plot warped grids along three orthogonal slices.
+    
+    vector_field should be a tensor of shape (3,L,W,H)
+    kwargs are passed to matplotlib plotting
+    
+    Deformations are projected into the viewing plane, so you are only seeing
+    their components in the viewing plane.
+    """
+    x,y,z = np.array(vector_field.shape[1:])//2 # half-way slices
+    plt.figure(figsize=(18,6))
+    plt.subplot(1,3,1); plt.axis('off');
+    plot_2D_deformation(vector_field[[1,2],x,:,:], grid_spacing, **kwargs)
+    plt.subplot(1,3,2); plt.axis('off')
+    plot_2D_deformation(vector_field[[0,2],:,y,:], grid_spacing, **kwargs)
+    plt.subplot(1,3,3); plt.axis('off')
+    plot_2D_deformation(vector_field[[0,1],:,:,z], grid_spacing, **kwargs)
     plt.show()
 
 
