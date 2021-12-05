@@ -43,7 +43,11 @@ def plot_2D_vector_field(vector_field, downsampling):
     """vector_field should be a tensor of shape (2,L,W)"""
     downsample2D = monai.networks.layers.factories.Pool['AVG',2](kernel_size=downsampling)
     vf_downsampled = downsample2D(vector_field.unsqueeze(0))[0]
-    plt.quiver(vf_downsampled[0,:,:], vf_downsampled[1,:,:], angles='xy', scale_units='xy', scale=downsampling);
+    plt.quiver(
+        vf_downsampled[0,:,:], vf_downsampled[1,:,:],
+        angles='xy', scale_units='xy', scale=downsampling,
+        headwidth=4.
+    );
     
 
 def preview_3D_vector_field(vector_field, downsampling=None):
