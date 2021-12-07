@@ -6,10 +6,10 @@ def preview_image(image_array, normalize_by = "volume", cmap = None, figsize = (
     """
     Display three orthogonal slices of the given 3D image.
     
-    image_array is assumed to be of shape (L,W,H)
+    image_array is assumed to be of shape (H,W,D)
     
-    if a number is provided for threshold, then pixels for which the value
-    is below the threshold will be colored red
+    If a number is provided for threshold, then pixels for which the value
+    is below the threshold will be shown in red
     """
     if normalize_by == "slice" :
         vmin = None
@@ -40,7 +40,7 @@ def preview_image(image_array, normalize_by = "volume", cmap = None, figsize = (
 
 
 def plot_2D_vector_field(vector_field, downsampling):
-    """vector_field should be a tensor of shape (2,L,W)"""
+    """vector_field should be a tensor of shape (2,H,W)"""
     downsample2D = monai.networks.layers.factories.Pool['AVG',2](kernel_size=downsampling)
     vf_downsampled = downsample2D(vector_field.unsqueeze(0))[0]
     plt.quiver(
@@ -54,7 +54,7 @@ def preview_3D_vector_field(vector_field, downsampling=None):
     """
     Display three orthogonal slices of the given 3D vector field.
     
-    vector_field should be a tensor of shape (3,L,W,H)
+    vector_field should be a tensor of shape (3,H,W,D)
     
     Vectors are projected into the viewing plane, so you are only seeing
     their components in the viewing plane.
@@ -79,7 +79,7 @@ def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
     Interpret vector_field as a displacement vector field defining a deformation,
     and plot an x-y grid warped by this deformation.
     
-    vector_field should be a tensor of shape (2,L,W)
+    vector_field should be a tensor of shape (2,H,W)
         Note: vector_field spatial indices are swapped to match the conventions of imshow and quiver
     kwargs are passed to matplotlib plotting
     """
@@ -107,7 +107,7 @@ def preview_3D_deformation(vector_field, grid_spacing, **kwargs):
     Interpret vector_field as a displacement vector field defining a deformation,
     and plot warped grids along three orthogonal slices.
     
-    vector_field should be a tensor of shape (3,L,W,H)
+    vector_field should be a tensor of shape (3,H,W,D)
     kwargs are passed to matplotlib plotting
     
     Deformations are projected into the viewing plane, so you are only seeing
@@ -128,19 +128,19 @@ def jacobian_determinant(vf):
     """
     Given a displacement vector field vf, compute the jacobian determinant scalar field.
     
-    vf is assumed to be a vector field of shape (3,L,W,H),
+    vf is assumed to be a vector field of shape (3,H,W,D),
     and it is interpreted as the displacement field.
     So it is defining a discretely sampled map from a subset of 3-space into 3-space,
     namely the map that sends point (x,y,z) to the point (x,y,z)+vf[:,x,y,z].
     This function computes a jacobian determinant by taking discrete differences in each spatial direction.
     
-    Returns a numpy array of shape (L,W,H).
+    Returns a numpy array of shape (H-1,W-1,D-1).
     """
 
-    _, L, W, H = vf.shape
+    _, H, W, D = vf.shape
     
     # Compute discrete spatial derivatives
-    diff_and_trim = lambda array, axis : np.diff(array, axis=axis)[:,:(L-1),:(W-1),:(H-1)]
+    diff_and_trim = lambda array, axis : np.diff(array, axis=axis)[:,:(H-1),:(W-1),:(D-1)]
     dx = diff_and_trim(vf, 1)
     dy = diff_and_trim(vf, 2)
     dz = diff_and_trim(vf, 3)
