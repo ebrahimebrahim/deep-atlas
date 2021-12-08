@@ -154,3 +154,14 @@ def jacobian_determinant(vf):
     det = dx[0]*(dy[1]*dz[2]-dz[1]*dy[2]) - dy[0]*(dx[1]*dz[2]-dz[1]*dx[2]) + dz[0]*(dx[1]*dy[2]-dy[1]*dx[2])
 
     return det
+
+def plot_against_epoch_numbers(epoch_and_value_pairs, **kwargs):
+    """
+    Helper to reduce code duplication when plotting quantities that vary over training epochs
+    
+    epoch_and_value_pairs: An array_like consisting of pairs of the form (<epoch number>, <value of thing to plot>)
+    kwargs are forwarded to matplotlib.pyplot.plot
+    """
+    array = np.array(epoch_and_value_pairs)
+    plt.plot(array[:,0], array[:,1], **kwargs)
+    plt.xlabel("epochs")
