@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import monai
+import torch
 
 def preview_image(image_array, normalize_by = "volume", cmap = None, figsize = (12,12), threshold = None):
     """
@@ -87,27 +88,15 @@ def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
     and plot an x-y grid warped by this deformation.
 
     vector_field should be a tensor of shape (2,H,W)
-        Note: vector_field spatial indices are swapped to match the conventions of imshow and quiver
-    kwargs are passed to matplotlib plotting
     """
-    # phi in the following line is the deformation mapping.
-    # Note that we are swapping the spatial x and y when we evaluate vector_field;
-    # the reason for this is that we want to match the the "matrix" or "image" style
-    # conventions used by matplotlib imshow and quiver, where the axis used for "rows"
-    # precedes the axis used for "columns"
-    phi = lambda pt : pt + vector_field[:,pt[1],pt[0]].numpy() # deformation mapping
-
-    _,xmax,ymax = vector_field.shape
-    xvals = np.arange(0,xmax,grid_spacing)
-    yvals = np.arange(0,ymax,grid_spacing)
-    for x in xvals:
-        pts = [phi(np.array([x,y])) for y in yvals]
-        pts = np.array(pts)
-        plt.plot(pts[:,0],pts[:,1], **kwargs)
-    for y in yvals:
-        pts = [phi(np.array([x,y])) for x in xvals]
-        pts = np.array(pts)
-        plt.plot(pts[:,0],pts[:,1], **kwargs)
+    _, H, W = vector_field.shape
+    grid_img = np.zeros((H,W))
+    grid_img[np.arange(0, H, grid_spacing),:]=1
+    grid_img[:,np.arange(0, W, grid_spacing)]=1
+    grid_img = torch.tensor(grid_img, dtype=vector_field.dtype).unsqueeze(0) # adds channel dimension, now (C,H,W)
+    warp = monai.networks.blocks.Warp(mode="bilinear", padding_mode="zeros")
+    grid_img_warped = warp(grid_img.unsqueeze(0), vector_field.unsqueeze(0))[0]
+    plt.imshow(grid_img_warped[0], origin='lower', cmap='gist_gray')
 
 def preview_3D_deformation(vector_field, grid_spacing, **kwargs):
     """
