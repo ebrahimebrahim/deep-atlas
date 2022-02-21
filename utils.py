@@ -3,7 +3,8 @@ import matplotlib.pyplot as plt
 import monai
 import torch
 
-def preview_image(image_array, normalize_by = "volume", cmap = None, figsize = (12,12), threshold = None):
+
+def preview_image(image_array, normalize_by="volume", cmap=None, figsize=(12, 12), threshold=None):
     """
     Display three orthogonal slices of the given 3D image.
 
@@ -12,47 +13,49 @@ def preview_image(image_array, normalize_by = "volume", cmap = None, figsize = (
     If a number is provided for threshold, then pixels for which the value
     is below the threshold will be shown in red
     """
-    if normalize_by == "slice" :
+    if normalize_by == "slice":
         vmin = None
         vmax = None
-    elif normalize_by == "volume" :
+    elif normalize_by == "volume":
         vmin = 0
         vmax = image_array.max().item()
-    else :
-        raise(ValueError(f"Invalid value '{normalize_by}' given for normalize_by"))
+    else:
+        raise(ValueError(
+            f"Invalid value '{normalize_by}' given for normalize_by"))
 
     # half-way slices
-    x,y,z = np.array(image_array.shape)//2
-    imgs = (image_array[x,:,:], image_array[:,y,:], image_array[:,:,z])
+    x, y, z = np.array(image_array.shape)//2
+    imgs = (image_array[x, :, :], image_array[:, y, :], image_array[:, :, z])
 
-    fig, axs = plt.subplots(1,3,figsize=figsize)
-    for ax,im in zip(axs,imgs):
+    fig, axs = plt.subplots(1, 3, figsize=figsize)
+    for ax, im in zip(axs, imgs):
         ax.axis('off')
-        ax.imshow(im, origin = 'lower', vmin = vmin, vmax = vmax, cmap=cmap)
+        ax.imshow(im, origin='lower', vmin=vmin, vmax=vmax, cmap=cmap)
 
         # threshold will be useful when displaying jacobian determinant images;
         # we will want to clearly see where the jacobian determinant is negative
         if threshold is not None:
-            red = np.zeros(im.shape+(4,)) # RGBA array
-            red[im<=threshold] = [1,0,0,1]
-            ax.imshow(red, origin = 'lower')
+            red = np.zeros(im.shape+(4,))  # RGBA array
+            red[im <= threshold] = [1, 0, 0, 1]
+            ax.imshow(red, origin='lower')
 
     plt.show()
 
 
 def plot_2D_vector_field(vector_field, downsampling):
-    """vector_field should be a tensor of shape (2,H,W).
+    """Plot a 2D vector field given as a tensor of shape (2,H,W).
 
     The plot origin will be in the lower left.
-    Let's use "x" and "y" for the rightward and upward directions respectively;
-    then the vector at location (x,y) in the plot image will have
-    vector_field[1,y,x] as its x-component and
-    vector_field[0,y,x] as its y-component.
+    Using "x" and "y" for the rightward and upward directions respectively,
+      the vector at location (x,y) in the plot image will have
+      vector_field[1,y,x] as its x-component and
+      vector_field[0,y,x] as its y-component.
     """
-    downsample2D = monai.networks.layers.factories.Pool['AVG',2](kernel_size=downsampling)
+    downsample2D = monai.networks.layers.factories.Pool['AVG', 2](
+        kernel_size=downsampling)
     vf_downsampled = downsample2D(vector_field.unsqueeze(0))[0]
     plt.quiver(
-        vf_downsampled[1,:,:], vf_downsampled[0,:,:],
+        vf_downsampled[1, :, :], vf_downsampled[0, :, :],
         angles='xy', scale_units='xy', scale=downsampling,
         headwidth=4.
     )
@@ -70,17 +73,21 @@ def preview_3D_vector_field(vector_field, downsampling=None):
 
     if downsampling is None:
         # guess a reasonable downsampling value to make a nice plot
-        downsampling = max(1, int(max(vector_field.shape[1:])) >> 5 )
+        downsampling = max(1, int(max(vector_field.shape[1:])) >> 5)
 
-    x,y,z = np.array(vector_field.shape[1:])//2 # half-way slices
-    plt.figure(figsize=(18,6))
-    plt.subplot(1,3,1); plt.axis('off')
-    plot_2D_vector_field(vector_field[[1,2],x,:,:], downsampling)
-    plt.subplot(1,3,2); plt.axis('off')
-    plot_2D_vector_field(vector_field[[0,2],:,y,:], downsampling)
-    plt.subplot(1,3,3); plt.axis('off')
-    plot_2D_vector_field(vector_field[[0,1],:,:,z], downsampling)
+    x, y, z = np.array(vector_field.shape[1:])//2  # half-way slices
+    plt.figure(figsize=(18, 6))
+    plt.subplot(1, 3, 1)
+    plt.axis('off')
+    plot_2D_vector_field(vector_field[[1, 2], x, :, :], downsampling)
+    plt.subplot(1, 3, 2)
+    plt.axis('off')
+    plot_2D_vector_field(vector_field[[0, 2], :, y, :], downsampling)
+    plt.subplot(1, 3, 3)
+    plt.axis('off')
+    plot_2D_vector_field(vector_field[[0, 1], :, :, z], downsampling)
     plt.show()
+
 
 def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
     """
@@ -98,6 +105,7 @@ def plot_2D_deformation(vector_field, grid_spacing, **kwargs):
     grid_img_warped = warp(grid_img.unsqueeze(0), vector_field.unsqueeze(0))[0]
     plt.imshow(grid_img_warped[0], origin='lower', cmap='gist_gray')
 
+
 def preview_3D_deformation(vector_field, grid_spacing, **kwargs):
     """
     Interpret vector_field as a displacement vector field defining a deformation,
@@ -109,14 +117,17 @@ def preview_3D_deformation(vector_field, grid_spacing, **kwargs):
     Deformations are projected into the viewing plane, so you are only seeing
     their components in the viewing plane.
     """
-    x,y,z = np.array(vector_field.shape[1:])//2 # half-way slices
-    plt.figure(figsize=(18,6))
-    plt.subplot(1,3,1); plt.axis('off');
-    plot_2D_deformation(vector_field[[1,2],x,:,:], grid_spacing, **kwargs)
-    plt.subplot(1,3,2); plt.axis('off')
-    plot_2D_deformation(vector_field[[0,2],:,y,:], grid_spacing, **kwargs)
-    plt.subplot(1,3,3); plt.axis('off')
-    plot_2D_deformation(vector_field[[0,1],:,:,z], grid_spacing, **kwargs)
+    x, y, z = np.array(vector_field.shape[1:])//2  # half-way slices
+    plt.figure(figsize=(18, 6))
+    plt.subplot(1, 3, 1)
+    plt.axis('off')
+    plot_2D_deformation(vector_field[[1, 2], x, :, :], grid_spacing, **kwargs)
+    plt.subplot(1, 3, 2)
+    plt.axis('off')
+    plot_2D_deformation(vector_field[[0, 2], :, y, :], grid_spacing, **kwargs)
+    plt.subplot(1, 3, 3)
+    plt.axis('off')
+    plot_2D_deformation(vector_field[[0, 1], :, :, z], grid_spacing, **kwargs)
     plt.show()
 
 
@@ -136,7 +147,8 @@ def jacobian_determinant(vf):
     _, H, W, D = vf.shape
 
     # Compute discrete spatial derivatives
-    diff_and_trim = lambda array, axis : np.diff(array, axis=axis)[:,:(H-1),:(W-1),:(D-1)]
+    def diff_and_trim(array, axis): return np.diff(
+        array, axis=axis)[:, :(H-1), :(W-1), :(D-1)]
     dx = diff_and_trim(vf, 1)
     dy = diff_and_trim(vf, 2)
     dz = diff_and_trim(vf, 3)
@@ -147,9 +159,11 @@ def jacobian_determinant(vf):
     dz[2] += 1
 
     # Compute determinant at each spatial location
-    det = dx[0]*(dy[1]*dz[2]-dz[1]*dy[2]) - dy[0]*(dx[1]*dz[2]-dz[1]*dx[2]) + dz[0]*(dx[1]*dy[2]-dy[1]*dx[2])
+    det = dx[0]*(dy[1]*dz[2]-dz[1]*dy[2]) - dy[0]*(dx[1]*dz[2] -
+                                                   dz[1]*dx[2]) + dz[0]*(dx[1]*dy[2]-dy[1]*dx[2])
 
     return det
+
 
 def plot_against_epoch_numbers(epoch_and_value_pairs, **kwargs):
     """
@@ -159,5 +173,5 @@ def plot_against_epoch_numbers(epoch_and_value_pairs, **kwargs):
     kwargs are forwarded to matplotlib.pyplot.plot
     """
     array = np.array(epoch_and_value_pairs)
-    plt.plot(array[:,0], array[:,1], **kwargs)
+    plt.plot(array[:, 0], array[:, 1], **kwargs)
     plt.xlabel("epochs")
